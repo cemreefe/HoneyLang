@@ -29,6 +29,8 @@ class Session {
 
         this.lessonKey = lessonKey;
 
+        Random random = new Random();
+
         //pick a number of words from dictionary
         final ArrayList<String[]>   sentenceList    = new ArrayList<String[]>(); 
         final ArrayList<Integer>    repetitionsLeft = new ArrayList<Integer>(); 
@@ -93,6 +95,12 @@ class Session {
                         if(repetitionsLeft.get(0)==0){
                             repetitionsLeft.remove(0);
                             sentenceList.remove(0);
+                        } else {
+                            int randVal = random.nextInt(repetitionsLeft.size());
+                            // move current item to avoid repetition.
+                            // move both repetitionsLeft & sentenceList value.
+                            repetitionsLeft.add(randVal, repetitionsLeft.remove(0));
+                            sentenceList.add(randVal, sentenceList.remove(0));
                         }
                         score+=exerciseScore*(scoreLimit/numberOfWords);
                     }
@@ -102,6 +110,8 @@ class Session {
                 case "L" :
                     
                     learnExercise(sentenceData);
+
+                    //no moving around.
 
                     // Turn into normal exercise
                     sentenceData[2] = "*";
