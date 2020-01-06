@@ -2,10 +2,6 @@ import java.io.*;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
-/**
- * user data is independent of language!!!!
- */
-
 public class Temp {
 
 	public static String prompt = ">";
@@ -20,32 +16,7 @@ public class Temp {
 
 	public static int pBarLength;
 
-	/**
-	 * read input from console alas input not accepted
-	 * 
-	 * @param acceptedAnswers : a list of accepted input strings
-	 * @return
-	 */
-	public static String waitForAcceptedAnswer(final List<String> acceptedAnswers) {
 
-		String inputBuffer = "";
-		while (!(acceptedAnswers.contains(inputBuffer) || acceptedAnswers.contains(inputBuffer.toLowerCase()))) {
-			final Scanner input = new Scanner(System.in);
-			System.out.println(prompt);
-			inputBuffer = input.nextLine();
-		}
-		return inputBuffer;
-	}
-
-	public static void setSrcLang(String src){
-		if(src.equals("tr")){
-			lang_pack = lang_Tr;
-		} else if (src.equals("az")) {
-			lang_pack = lang_Az;
-		} else if (src.equals("kz")) {
-			lang_pack = lang_Kz;
-		}
-	}
 
 	public static void main(final String[] args) throws NoSuchAlgorithmException {
 
@@ -63,18 +34,9 @@ public class Temp {
 
 		pBarLength = 20;
 
-		/**
-		 * USER FIELDS
-		 */
-
-		String courseKey;
-		String csvName;
-		String pathToLessonListCsv;
-		String pathToWordListCsv;
-
 
 		// default language is turkish.
-		lang_pack = lang_Tr; 
+		lang_pack = LangPack.lang_Tr; 
 		
 		/**
 		 * for console input
@@ -87,37 +49,29 @@ public class Temp {
 		 * else create new user.
 		 * TODO: used lang_Tr, handle?
 		 */
-		System.out.println(lang_pack.get("enter username"));
-		System.out.println(prompt);
-		String username = input.next();
-		String password = "";
+
+		String username = readUsername(prompt);
+		String password = readPassword(prompt);
 		
 		User loggedUser;
 		if(User.userExists(username)){
 
 			//password not yet fully implemented
-			/*
-			while(loggedUser.getName().equals("!wrongpassword")){
-
+			
+			
+			if(!CsvMisc.checkUserPassword(usrPath+username+".csv", password)){
+				System.out.println(lang_pack.get("incorrect password"));
+				System.exit(0);
 			}
-			*/
+			
 			loggedUser = CsvMisc.loadUserData(usrPath+username+".csv", username, password, delimeter);
 			
-
-			System.out.println(loggedUser.getSourceLanguage());
-
 			setSrcLang(loggedUser.getSourceLanguage());
 			
-
 			System.out.println(lang_pack.get("welcome")+username);
-
-			
 
 			sourceLanguageKey = loggedUser.getSourceLanguage();
 			targetLanguageKey = loggedUser.getTargetLanguage();
-
-			courseKey = sourceLanguageKey + "-" + targetLanguageKey;
-
 			
 
 		} else {
@@ -139,24 +93,23 @@ public class Temp {
 			System.out.println("Öğrenmek istediğiniz dili seçiniz.\n[TR]\t[AZ]\t[KZ]");
 			targetLanguageKey = waitForAcceptedAnswer(new ArrayList<String>( Arrays.asList("tr", "az", "kz")));
 
-			courseKey = sourceLanguageKey + "-" + targetLanguageKey;
-
-			loggedUser.addCourse(courseKey);
+			loggedUser.addCourse(sourceLanguageKey + "-" + targetLanguageKey);
 			CsvMisc.saveUserData(loggedUser, usrPath, delimeter);
 
 		}
 
-		
-		csvName = courseKey + ".csv";
-		pathToLessonListCsv = lesPath + csvName;
-		pathToWordListCsv = dicPath + csvName;
+		String courseKey = sourceLanguageKey + "-" + targetLanguageKey;
+		String csvName = courseKey + ".csv";
+		String pathToLessonListCsv = lesPath + csvName;
+		String pathToWordListCsv = dicPath + csvName;
+
 
 
 		/**
 		 * Optionally, we could have different dictionaries for different lessons.
 		 * We could also have different dictionaries for different lesson parts but i will stick with the idea above and use an offset.
 		 */
-		final String[][] dictionary = readFromCsv(pathToWordListCsv, numberOfTuples);
+		final String[][] dictionary = CsvMisc.readDicFromCsv(pathToWordListCsv, numberOfTuples);
 
 		/**
 		 * 
@@ -164,6 +117,9 @@ public class Temp {
 		final ArrayList<String> lessons = CsvMisc.readCsvKeysToIAL(pathToLessonListCsv, delimeter);
 		Map<String, int[]> lessonIndexes = CsvMisc.readCsvToLessonIndexMap(pathToLessonListCsv, delimeter);
 
+		/**
+		 * Main Page
+		 */
 		while(true){
 			/**
 			 * Print out the lesson layout.
@@ -222,17 +178,14 @@ public class Temp {
 		int i;
 		int c = numberOfWords;
 		//add multiplier
-		while(score<360){
+		while(score<scoreLimit){
 			printProgressBar(score, pBarLength);
 			i = random.nextInt(c);
 			final String[] tuple = wordList.get(i);
 
 			int exerciseScore;
-			if(random.nextInt()%2==0){
-				exerciseScore = writeOutExercise(tuple);
-			} else {
-				exerciseScore = blockExercise(tuple);
-			}
+			
+			exerciseScore = writeOutExercise(tuple);
 
 
 			if(exerciseScore==1){
@@ -274,17 +227,20 @@ public class Temp {
 		System.out.println(lang_pack.get("translate to " + targetLanguageKey));
 		System.out.println(tuple[0]);
 
-		final Scanner input = new Scanner(System.in);
+		int response;
+
+		
 		System.out.print(prompt);
-		final String answer = input.nextLine();
+		Scanner input = new Scanner(System.in);
+		String answer = input.nextLine();
 		if(answer.equals(tuple[1]) || answer.equals(tuple[1].replaceAll("ə", "é"))){
 			System.out.println(lang_pack.get("right answer") +"\n");
-			return 1;
+			response = 1;
 		} else {
 			System.out.println(lang_pack.get("wrong answer") + tuple[1] +"\n");
-			return 0;
+			response = 0;
 		}
-		
+		return response;
 	}
 
 	public static int blockExercise(final String[] tuple){
@@ -353,50 +309,20 @@ public class Temp {
 				}
 				if(isComplete && pinboard.size()!=0){
 					System.out.println(lang_pack.get("right answer") +"\n");
+					input.close();
 					return 1;
 				} else {
 					System.out.println(lang_pack.get("wrong answer") + tuple[1] +"\n");
+					input.close();
 					return 0;
 				}
 			}
 			
 		}
+
+		
 	}
 
-
-	public static String[][] readFromCsv(final String pathToCsv, final int numberOfTuples){
-
-		final String[][] dictionary = new String[numberOfTuples][2];
-
-		try {
-			final BufferedReader csvReader = new BufferedReader(new FileReader(pathToCsv));
-
-			String row; int i=0;
-			while (i<numberOfTuples+1 && (row = csvReader.readLine()) != null) {
-
-				if(i==0) {i++; continue;}
-
-				final String[] data = row.split(";");
-				dictionary[i-1][0] = data [0];
-				dictionary[i-1][1] = data [1];
- 				i++;
-				
-			}
-			csvReader.close();
-			
-
-
-		}
-		catch (final FileNotFoundException e){
-			System.out.println(e);
-		}
-		catch (final IOException e){
-			System.out.println(e);
-		}
-
-		return dictionary;
-
-	}
 
 	public static int[] stoia(String s) {
 		String[] str = s.split(",");
@@ -418,24 +344,6 @@ public class Temp {
 	}
 	
 
-	//TODO: change delimeter to ";"
-	public static void writeToCsv(final String pathToCsv, final String s){
-
-		try {
-			final FileWriter csvWriter = new FileWriter(pathToCsv);
-			csvWriter.append(s);
-			csvWriter.flush();
-			csvWriter.close();
-
-		}
-		catch (final FileNotFoundException e){
-			System.out.println(e);
-		}
-		catch (final IOException e){
-			System.out.println(e);
-		}
-	}
-
 	
 
 	public static void printProgressBar(final int score, final int length){
@@ -449,62 +357,63 @@ public class Temp {
 		System.out.println("");
 	}
 
-
 	/**
-	 * TODO: read these dictionaries from files.
-	 * write a function to initialize maps from json/csv files.
-	*/
+	 * read input from console alas input not accepted
+	 * TODO: can't close scanner without exception?
+	 * 
+	 * @param acceptedAnswers : a list of accepted input strings
+	 * @return
+	 */
+	public static String waitForAcceptedAnswer(final List<String> acceptedAnswers) {
 
-	public static Map<String, String> lang_Tr = new HashMap<String, String>() {{
-		put("translate to tr",					"Bu cümleyi Türkiye Türkçesi'ne çeviriniz.");
-		put("translate to az",					"Bu cümleyi Azerbaycan Türkçesi'ne çeviriniz.");
-		put("translate to kz",					"Bu cümleyi Kazakistan Türkçesi'ne çeviriniz.");
-        put("choose lesson",					"^Listeden bir ders seçiniz. (Sadece dersin numarasını giriniz.)");
-        put("lesson",							"Ders ");
-		put("success",							"Egzersizi tamamladınız, tebrikler!");
-		put("right answer",						"Tebrikler, doğru cevap!");
-		put("wrong answer",						"Yanlış cevap, doğrusu: ");
-		put("welcome",							"Hoş geldin ");
-		put("enter username",					"Kullanıcı adını girin.");
-		put("let's learn",						"Bu kelimeyi öğrenelim: ");
-		put("ignored",							"Bu kelimeyi bir daha görmeyeceksin: ");
-		put("enter an integer value",			"Lütfen eklemek istediğiniz kelimenin numarasını giriniz. ");
-		
-	}};
-	
-	public static Map<String, String> lang_Az = new HashMap<String, String>() {{
-		put("translate to tr",					"Bu cümləni Azərbaycan türk dilinə tərcümə edin.");
-		put("translate to az",					"Bu cümləni Azərbaycan türkcəsinə tərcümə edin.");
-		put("translate to kz",					"Bu cümləni qazax türkcəsinə tərcümə edin.");
-        put("choose lesson",					"^Siyahıdan bir kurs seçin. (Sadəcə kurs nömrəsini daxil edin.)");
-        put("lesson",							"Ders ");
-		put("success",							"Məşqi başa vurdunuz, afərin!");
-		put("right answer",						"Afərin, düzgün cavab!");
-		put("wrong answer",						"Yanlış cavab, əslində: ");
-		put("welcome",							"Xoş gəldin ");
-		put("enter username",					"İstifadəçi adınızı daxil edin.");
-		put("let's learn",						"Bu sözü öyrənək:");
-		put("ignored",							"Bu sözü bir daha görməyəcəksiniz: ");
-		put("enter an integer value",			"Lütfen eklemek istediğiniz kelimenin numarasını giriniz. "); //TODO:
-		
-	}};
-	
-	public static Map<String, String> lang_Kz = new HashMap<String, String>() {{
-		put("translate to tr",					"Түркия осы сөйлемді бұраңыз.");
-		put("translate to az",					"Бұл сөйлемді әзірбайжан түрікшесіне аударыңыз.");
-		put("translate to kz",					"Осы сөйлемді қазақ түрікшесіне аударыңыз.");
-        put("choose lesson",					"^Тізімнен курс таңдаңыз. (Курстың нөмірін енгізіңіз.)");
-        put("lesson",							"Курс ");
-		put("success",							"Сіз жаттығуды аяқтадыңыз, құттықтаймыз!");
-		put("right answer",						"Құттықтаймыз, дұрыс жауап!");
-		put("wrong answer",						"Қате жауап, нақты: ");
-		put("welcome",							"Қош келдіңіздер ");
-		put("enter username",					"Пайдаланушы атын енгізіңіз.");
-		put("let's learn",						"Осы сөзді білейік: ");
-		put("ignored",							"Бұл сөзді енді ешқашан көрмейсіз: ");
-		put("enter an integer value",			"Lütfen eklemek istediğiniz kelimenin numarasını giriniz. "); //TODO:
-		
-	}};
+		String inputBuffer = "";
+		while (!(acceptedAnswers.contains(inputBuffer) || acceptedAnswers.contains(inputBuffer.toLowerCase()))) {
+			final Scanner input = new Scanner(System.in);
+			System.out.println(prompt);
+			inputBuffer = input.nextLine();
+		}
+		return inputBuffer;
+	}
+
+	public static void setSrcLang(String src){
+		if(src.equals("tr")){
+			lang_pack = LangPack.lang_Tr;
+		} else if (src.equals("az")) {
+			lang_pack = LangPack.lang_Az;
+		} else if (src.equals("kz")) {
+			lang_pack = LangPack.lang_Kz;
+		}
+	}
+
+	private static String readUsername(String prompt){
+
+		Scanner input = new Scanner(System.in);
+		System.out.println(lang_pack.get("enter username"));
+		System.out.print(prompt);
+		return input.next();
+
+	}
+
+	private static String readPassword(String prompt){
+		System.out.println(lang_pack.get("enter password"));  
+		return maskedReader(prompt);
+	}
+
+    public static String maskedReader(String prompt) {    
+		  
+        Console console = System.console();
+        if (console == null) {
+            System.out.println("Couldn't get Console instance");
+            System.exit(0);
+        }
+
+        String passwordArray = new String(console.readPassword(prompt));
+
+		return passwordArray;
+    }
+
+
+
 
 	public static final String ANSI_RESET = "\u001B[0m";
 	public static final String ANSI_BLACK = "\u001B[30m";

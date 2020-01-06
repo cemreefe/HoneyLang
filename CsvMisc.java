@@ -335,4 +335,58 @@ public class CsvMisc {
 
         return list;
     }
+
+    public static String[][] readDicFromCsv(final String pathToCsv, final int numberOfTuples){
+
+		final String[][] dictionary = new String[numberOfTuples][2];
+
+		try {
+			final BufferedReader csvReader = new BufferedReader(new FileReader(pathToCsv));
+
+			String row; int i=0;
+			while (i<numberOfTuples+1 && (row = csvReader.readLine()) != null) {
+
+				if(i==0) {i++; continue;}
+
+				final String[] data = row.split(";");
+				dictionary[i-1][0] = data [0];
+                dictionary[i-1][1] = data [1];
+                if(data.length==3){
+                    dictionary[i-1][2] = data [2];
+                }
+ 				i++;
+				
+			}
+			csvReader.close();
+			
+
+
+		}
+		catch (final FileNotFoundException e){
+			System.out.println(e);
+		}
+		catch (final IOException e){
+			System.out.println(e);
+		}
+
+		return dictionary;
+
+    }
+    
+    public static void writeStringToCsv(final String pathToCsv, final String s){
+
+		try {
+			final FileWriter csvWriter = new FileWriter(pathToCsv);
+			csvWriter.append(s);
+			csvWriter.flush();
+			csvWriter.close();
+
+		}
+		catch (final FileNotFoundException e){
+			System.out.println(e);
+		}
+		catch (final IOException e){
+			System.out.println(e);
+		}
+	}
 }
