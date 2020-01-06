@@ -1,46 +1,57 @@
-import java.io.*;  
-import java.util.*; 
-
-
+import java.io.*;
+import java.security.NoSuchAlgorithmException;
+import java.util.*;
 
 /**
  * user data is independent of language!!!!
  */
 
-
 public class Temp {
 
 	public static String prompt = ">";
+	public static String delimeter = ";";
 
 	public static int scoreLimit = 360;
 
-	public static Map<String, String> lang_pack; 
+	public static Map<String, String> lang_pack;
 
 	public static String targetLanguageKey;
 	public static String sourceLanguageKey;
 
-	public static int pBarLength;	
-
+	public static int pBarLength;
 
 	/**
 	 * read input from console alas input not accepted
+	 * 
 	 * @param acceptedAnswers : a list of accepted input strings
 	 * @return
 	 */
-	public static String waitForAcceptedAnswer(final List<String> acceptedAnswers){
-		
+	public static String waitForAcceptedAnswer(final List<String> acceptedAnswers) {
+
 		String inputBuffer = "";
-		while(!(acceptedAnswers.contains(inputBuffer) || acceptedAnswers.contains(inputBuffer.toLowerCase()))){
+		while (!(acceptedAnswers.contains(inputBuffer) || acceptedAnswers.contains(inputBuffer.toLowerCase()))) {
 			final Scanner input = new Scanner(System.in);
 			System.out.println(prompt);
 			inputBuffer = input.nextLine();
 		}
 		return inputBuffer;
 	}
-	
-	public static void main(final String[] args) {
+
+	public static void setSrcLang(String src){
+		if(src.equals("tr")){
+			lang_pack = lang_Tr;
+		} else if (src.equals("az")) {
+			lang_pack = lang_Az;
+		} else if (src.equals("kz")) {
+			lang_pack = lang_Kz;
+		}
+	}
+
+	public static void main(final String[] args) throws NoSuchAlgorithmException {
 
 		final String dicPath = "dictionaries/";
+		final String lesPath = "lessons/";
+		final String usrPath = "users/";
 		
 		/**
 		 * numberOfTuples:	number of word pairs to be read from the csv file for a lesson.
@@ -49,11 +60,21 @@ public class Temp {
 		 * temporary buffer for reading the console input.
 		 */
 		final int numberOfTuples = 100;
-		final int wordsPerLesson = 10;
-		final int numberOfLessons = numberOfTuples/wordsPerLesson;
+
+		pBarLength = 20;
+
+		/**
+		 * USER FIELDS
+		 */
+
+		String courseKey;
+		String csvName;
+		String pathToLessonListCsv;
+		String pathToWordListCsv;
 
 
-		pBarLength = wordsPerLesson*2;
+		// default language is turkish.
+		lang_pack = lang_Tr; 
 		
 		/**
 		 * for console input
@@ -62,52 +83,86 @@ public class Temp {
 
 
 		/**
-		 * Prompt to choose source language
-		 */
-		System.out.println("Uygulama dilini seçiniz.\n[TR]\t[AZ]\t[KZ]");
-		sourceLanguageKey = waitForAcceptedAnswer(new ArrayList<String>( Arrays.asList("tr", "az", "kz")));
-
-		if(sourceLanguageKey.equals("tr")){
-			lang_pack = lang_Tr;
-		} else if (sourceLanguageKey.equals("az")) {
-			lang_pack = lang_Az;
-		} else if (sourceLanguageKey.equals("kz")) {
-			lang_pack = lang_Kz;
-		}
-
-		/**
-		 * Prompt to choose target language
-		 */
-		System.out.println("Öğrenmek istediğiniz dili seçiniz.\n[TR]\t[AZ]\t[KZ]");
-		targetLanguageKey = waitForAcceptedAnswer(new ArrayList<String>( Arrays.asList("tr", "az", "kz")));
-
-		String csvName = sourceLanguageKey + "-" + targetLanguageKey + ".csv";
-		String pathToCsv = dicPath + csvName;
-
-		/**
 		 * get username, if user exists, load data
 		 * else create new user.
+		 * TODO: used lang_Tr, handle?
 		 */
-
-
 		System.out.println(lang_pack.get("enter username"));
 		System.out.println(prompt);
 		String username = input.next();
+		String password = "";
 		
-		if(userExists(username)){
+		User loggedUser;
+		if(User.userExists(username)){
+
+			//password not yet fully implemented
+			/*
+			while(loggedUser.getName().equals("!wrongpassword")){
+
+			}
+			*/
+			loggedUser = CsvMisc.loadUserData(usrPath+username+".csv", username, password, delimeter);
+			
+
+			System.out.println(loggedUser.getSourceLanguage());
+
+			setSrcLang(loggedUser.getSourceLanguage());
+			
+
 			System.out.println(lang_pack.get("welcome")+username);
-			loadUserData(username);
-			System.out.println("loaded");
+
+			
+
+			sourceLanguageKey = loggedUser.getSourceLanguage();
+			targetLanguageKey = loggedUser.getTargetLanguage();
+
+			courseKey = sourceLanguageKey + "-" + targetLanguageKey;
+
+			
+
 		} else {
-			saveUser(username, sourceLanguageKey, targetLanguageKey);
+			loggedUser = new User(username, password);
+
+			User.writeToUsersList(username);
+
+			/**
+			 * Prompt to choose source language
+			 */
+			System.out.println("Uygulama dilini seçiniz.\n[TR]\t[AZ]\t[KZ]");
+			sourceLanguageKey = waitForAcceptedAnswer(new ArrayList<String>( Arrays.asList("tr", "az", "kz")));
+
+			setSrcLang(sourceLanguageKey);
+
+			/**
+			 * Prompt to choose target language
+			 */
+			System.out.println("Öğrenmek istediğiniz dili seçiniz.\n[TR]\t[AZ]\t[KZ]");
+			targetLanguageKey = waitForAcceptedAnswer(new ArrayList<String>( Arrays.asList("tr", "az", "kz")));
+
+			courseKey = sourceLanguageKey + "-" + targetLanguageKey;
+
+			loggedUser.addCourse(courseKey);
+			CsvMisc.saveUserData(loggedUser, usrPath, delimeter);
+
 		}
+
+		
+		csvName = courseKey + ".csv";
+		pathToLessonListCsv = lesPath + csvName;
+		pathToWordListCsv = dicPath + csvName;
 
 
 		/**
 		 * Optionally, we could have different dictionaries for different lessons.
 		 * We could also have different dictionaries for different lesson parts but i will stick with the idea above and use an offset.
 		 */
-		final String[][] dictionary = readFromCsv(pathToCsv, numberOfTuples);
+		final String[][] dictionary = readFromCsv(pathToWordListCsv, numberOfTuples);
+
+		/**
+		 * 
+		 */
+		final ArrayList<String> lessons = CsvMisc.readCsvKeysToIAL(pathToLessonListCsv, delimeter);
+		Map<String, int[]> lessonIndexes = CsvMisc.readCsvToLessonIndexMap(pathToLessonListCsv, delimeter);
 
 		while(true){
 			/**
@@ -117,41 +172,47 @@ public class Temp {
 			 * These do not constitute a difference in implementation
 			 * but a difference in respresentation.
 			 */
-			for(int i=0;i<numberOfLessons;i++){
-				System.out.print(lang_pack.get("lesson") + (i+1) + "\t");
-				//neden 35?
-				printProgressBar(stoia(userData.get("progress"))[i]*12, 20);
+			for(int i=0;i<lessons.size();i++){
+				System.out.print(lang_pack.get("lesson") + lessons.get(i)+"\t");
+				//neden 12? -> 360/(5*12) = 6. 5: full lesson credit. takes 6 sessions to fill up a lesson's bar.
+				printProgressBar(loggedUser.getProgress(courseKey).getLessonTimesDone(lessons.get(i))*12, 20);
+				
 			}
 			System.out.println(lang_pack.get("choose lesson"));
-			
-
 
 			System.out.print(prompt);
 			int selection = input.nextInt();
 
 			if (selection==-1) break;
 
-			
-			
-			changeElementInProgress(selection, 
-				exerciseSession(wordsPerLesson, dictionary, (selection-1)*wordsPerLesson));
+			loggedUser.changeLessonTimesDone(courseKey, lessons.get(selection),
+				exerciseSession(dictionary, 
+					lessonIndexes.get(lessons.get(selection))[0], 
+					lessonIndexes.get(lessons.get(selection))[1]));
 
-			
-			saveUser(username, sourceLanguageKey, targetLanguageKey);
+			CsvMisc.saveUserData(loggedUser, usrPath, delimeter);
 
 		}
 
-		
 		input.close();
 
 	}
 
-	public static int exerciseSession(final int numberOfWords, final String[][] dictionary, final int offset){
+	/**
+	 * TODO: definitely write a better session function!
+	 * @param dictionary
+	 * @param startIndex
+	 * @param endIndex
+	 * @return
+	 */
+	public static int exerciseSession(final String[][] dictionary, int startIndex, int endIndex){
 		//pick a number of words from dictionary
 		final ArrayList<String[]> wordList = new ArrayList<String[]>(); 
 
+		int numberOfWords = endIndex - startIndex;
+
 		for(int i=0;i<numberOfWords;i++){
-			wordList.add(dictionary[offset + i]);
+			wordList.add(dictionary[startIndex + 1 + i]);
 		}
 
 		int rating = 5;
@@ -256,7 +317,23 @@ public class Temp {
 		while(true){
 
 			boolean isComplete = false;
-			int answer = input.nextInt();
+			String in = input.next();
+			int answer;
+			
+			//TODO: burası çok sorunlu ama iş görüyor for test purposes
+			while(true){
+				try {
+					in = input.next();
+					answer = Integer.parseInt(in);
+					break;
+				} catch (final NumberFormatException e){
+					System.out.println(lang_pack.get("enter an integer value"));
+					continue;
+				}
+			}
+			
+			
+
 			if(answer>0){
 				pinboard.add(userDeck.get(answer-1));
 
@@ -286,28 +363,6 @@ public class Temp {
 		}
 	}
 
-	public static void loadUserData(String username){
-		try {
-			BufferedReader csvReader = new BufferedReader(new FileReader("users/user_"+username+".efe"));
-
-			String row;
-			while ((row = csvReader.readLine()) != null) {
-
-				String[] data = row.split(";");
-				System.out.println(row);
-				userData.put(data[0], data[1]);
-				
-			}
-			csvReader.close();
-
-		}
-		catch (final FileNotFoundException e){
-			System.out.println(e);
-		}
-		catch (final IOException e){
-			System.out.println(e);
-		}
-	}
 
 	public static String[][] readFromCsv(final String pathToCsv, final int numberOfTuples){
 
@@ -361,79 +416,7 @@ public class Temp {
 		}
 		return s.substring(0,s.length()-1);
 	}
-
-	public static void changeElementInProgress(int lessonNumber1b, int changeInValue){
-		int[] a = stoia(userData.get("progress"));
-		a[lessonNumber1b-1]+=changeInValue;
-		userData.put("progress", iatos(a));
-	}
-
-	public static boolean userExists(String username){
-		try {
-			final BufferedReader csvReader = new BufferedReader(new FileReader("users/allUsers.efe"));
-
-			String row;
-			while ((row = csvReader.readLine()) != null) {
-
-				if(row.equals(username)){
-					csvReader.close();
-					return true;
-				} 
-				
-			}
-			csvReader.close();
-			return false;
-
-		}
-		catch (final FileNotFoundException e){
-			System.out.println(e);
-		}
-		catch (final IOException e){
-			System.out.println(e);
-		}
-
-		//if we return false when exceptions occur, we will later overwrite user data
-		//if we return true we will later catch a fileNotFoundException
-		return true;
-
-	}
 	
-
-	/**
-	 * creates new user when username not taken.
-	 * @param username : 
-	 * @param sourceLanguageKey :
-	 * @param targetLanguageKey :
-	 * @return
-	 */
-	public static void saveUser(String username, String sourceLanguageKey, String targetLanguageKey){
-
-		String s = "password;" 				+ userData.get("password") + "\n"
-					+ "progress;" 			+ userData.get("progress") + "\n"
-					+ "source language;" 	+ sourceLanguageKey + "\n"
-					+ "target language;" 	+ targetLanguageKey;
-
-		try {
-			final FileWriter csvWriter = new FileWriter("users/user_"+username+".efe");
-			csvWriter.append(s);
-			csvWriter.flush();
-			csvWriter.close();
-
-			if(!userExists(username)){
-				BufferedWriter usersWriter = new BufferedWriter(new FileWriter("users/allUsers.efe", true));
-				usersWriter.append(username + "\n");
-				usersWriter.close();
-			}
-
-		}
-		catch (final FileNotFoundException e){
-			System.out.println(e);
-		}
-		catch (final IOException e){
-			System.out.println(e);
-		}
-
-	}
 
 	//TODO: change delimeter to ";"
 	public static void writeToCsv(final String pathToCsv, final String s){
@@ -466,12 +449,6 @@ public class Temp {
 		System.out.println("");
 	}
 
-	public static Map<String, String> userData = new HashMap<String, String>() {{
-		put("password",							"%");
-		put("progress",							"0,0,0,0,0,0,0,0,0,0");
-		put("source language",					"");
-		put("target language",					"");
-	}};
 
 	/**
 	 * TODO: read these dictionaries from files.
@@ -491,6 +468,7 @@ public class Temp {
 		put("enter username",					"Kullanıcı adını girin.");
 		put("let's learn",						"Bu kelimeyi öğrenelim: ");
 		put("ignored",							"Bu kelimeyi bir daha görmeyeceksin: ");
+		put("enter an integer value",			"Lütfen eklemek istediğiniz kelimenin numarasını giriniz. ");
 		
 	}};
 	
@@ -507,6 +485,7 @@ public class Temp {
 		put("enter username",					"İstifadəçi adınızı daxil edin.");
 		put("let's learn",						"Bu sözü öyrənək:");
 		put("ignored",							"Bu sözü bir daha görməyəcəksiniz: ");
+		put("enter an integer value",			"Lütfen eklemek istediğiniz kelimenin numarasını giriniz. "); //TODO:
 		
 	}};
 	
@@ -523,6 +502,7 @@ public class Temp {
 		put("enter username",					"Пайдаланушы атын енгізіңіз.");
 		put("let's learn",						"Осы сөзді білейік: ");
 		put("ignored",							"Бұл сөзді енді ешқашан көрмейсіз: ");
+		put("enter an integer value",			"Lütfen eklemek istediğiniz kelimenin numarasını giriniz. "); //TODO:
 		
 	}};
 
