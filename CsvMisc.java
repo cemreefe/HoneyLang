@@ -338,7 +338,7 @@ public class CsvMisc {
 
     public static String[][] readDicFromCsv(final String pathToCsv, final int numberOfTuples){
 
-		final String[][] dictionary = new String[numberOfTuples][2];
+		final String[][] dictionary = new String[numberOfTuples][3];
 
 		try {
 			final BufferedReader csvReader = new BufferedReader(new FileReader(pathToCsv));

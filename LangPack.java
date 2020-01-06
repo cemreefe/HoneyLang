@@ -29,6 +29,7 @@ class LangPack {
 		put("let's learn",						"Bu kelimeyi öğrenelim: ");
 		put("ignored",							"Bu kelimeyi bir daha görmeyeceksin: ");
 		put("enter an integer value",			"Lütfen eklemek istediğiniz kelimenin numarasını giriniz. ");
+		put("press enter to continue",			"Devam etmek için enter'a basınız. ");
 		
 	}};
 	
@@ -53,7 +54,8 @@ class LangPack {
 		put("incorrect password",				"Yanlış parol.");
 		put("let's learn",						"Bu sözü öyrənək:");
 		put("ignored",							"Bu sözü bir daha görməyəcəksiniz: ");
-		put("enter an integer value",			"Lütfen eklemek istediğiniz kelimenin numarasını giriniz. "); //TODO:
+		put("enter an integer value",			"Əlavə etmək istədiyiniz sözün nömrəsini daxil edin. "); //TODO:
+		put("press enter to continue",			"Davam etmək üçün Enter düyməsini basın.");
 		
 	}};
 	
@@ -78,7 +80,21 @@ class LangPack {
 		put("incorrect password",				"Қате пароль.");
 		put("let's learn",						"Осы сөзді білейік: ");
 		put("ignored",							"Бұл сөзді енді ешқашан көрмейсіз: ");
-		put("enter an integer value",			"Lütfen eklemek istediğiniz kelimenin numarasını giriniz. "); //TODO:
+		put("enter an integer value",			"Қосқыңыз келетін сөздің нөмірін енгізіңіз."); //TODO:
+		put("press enter to continue",			"Жалғастыру үшін enter пернесін басыңыз.");
+		
+	}};
+
+	public static Map<String, String> commands = new HashMap<String, String>() {
+
+        /**
+		 *
+		 */
+		private static final long serialVersionUID = 1L;
+
+		{
+		put("exit",					"c::exit");
+
 		
 	}};
 
