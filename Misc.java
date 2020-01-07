@@ -1,4 +1,22 @@
+import java.util.*;
+
 class Misc {
+
+    public static ArrayList<Integer> rangeIAL(int start, int exclude){
+        ArrayList<Integer> l = new ArrayList<Integer>();
+        for(int i=start;i<exclude;i++){
+            l.add(i);
+        }
+        return l;
+    }
+
+    public static ArrayList<String> rangeSAL(int start, int exclude){
+        ArrayList<String> l = new ArrayList<String>();
+        for(int i=start;i<exclude;i++){
+            l.add(""+i);
+        }
+        return l;
+    }
 
     public static int[] stoia(String s) {
 		String[] str = s.split(",");

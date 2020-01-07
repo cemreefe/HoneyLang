@@ -83,7 +83,7 @@ public class Temp {
 			 * Prompt to choose source language
 			 */
 			System.out.println("Uygulama dilini seçiniz.\n[TR]\t[AZ]\t[KZ]");
-			sourceLanguageKey = waitForAcceptedAnswer(new ArrayList<String>( Arrays.asList("tr", "az", "kz")));
+			sourceLanguageKey = waitForAcceptedStringAnswer(new ArrayList<String>( Arrays.asList("tr", "az", "kz")));
 
 			setSrcLang(sourceLanguageKey);
 
@@ -91,7 +91,7 @@ public class Temp {
 			 * Prompt to choose target language
 			 */
 			System.out.println("Öğrenmek istediğiniz dili seçiniz.\n[TR]\t[AZ]\t[KZ]");
-			targetLanguageKey = waitForAcceptedAnswer(new ArrayList<String>( Arrays.asList("tr", "az", "kz")));
+			targetLanguageKey = waitForAcceptedStringAnswer(new ArrayList<String>( Arrays.asList("tr", "az", "kz")));
 
 			loggedUser.addCourse(sourceLanguageKey + "-" + targetLanguageKey);
 			CsvMisc.saveUserData(loggedUser, usrPath, delimeter);
@@ -134,12 +134,13 @@ public class Temp {
 				Misc.printProgressBar(loggedUser.getProgress(courseKey).getLessonTimesDone(lessons.get(i))*12, scoreLimit, 20);
 				
 			}
-			System.out.println(lang_pack.get("choose lesson"));
+			System.out.println(lang_pack.get("choose lesson")+"(-1: exit)");
+			
+			int selection = waitForAcceptedIntegerAnswer(Misc.rangeIAL(1, lessons.size()+1));
 
-			System.out.print(prompt);
-			int selection = input.nextInt();
-
-			if (selection==-1) break;
+			if(selection==-1){
+				break;
+			}
 
 			Session sesh = new Session(loggedUser);
 			sesh.startSession(dictionary, lessons.get(selection-1), lessonIndexes.get(lessons.get(selection-1))[0], lessonIndexes.get(lessons.get(selection-1))[1], scoreLimit);
@@ -153,87 +154,6 @@ public class Temp {
 	}
 
 
-	public static int blockExercise(final String[] tuple){
-
-		System.out.println(lang_pack.get("translate to " + targetLanguageKey));
-		System.out.println(tuple[0]);
-
-		ArrayList<Pair<String, Integer>> pinboard = new ArrayList<Pair<String, Integer>>();
-		ArrayList<Pair<String, Integer>> userDeck = new ArrayList<Pair<String, Integer>>();
-
-
-		String[] tokens = tuple[1].split(" |\'");
-
-		for(int i=0;i<tokens.length;i++){
-			Pair<String, Integer> pair = Pair.createPair(tokens[i], i);
-			userDeck.add(pair);
-		}
-
-		Collections.shuffle(userDeck);
-
-		for(int i=0;i<userDeck.size();i++){
-			System.out.print("["+(i+1)+": "+userDeck.get(i).getValue0()+"]");
-		}
-		System.out.println("");
-
-		final Scanner input = new Scanner(System.in);
-		System.out.print(prompt);
-
-		//no bugcheck
-		while(true){
-
-			boolean isComplete = false;
-			String in = input.next();
-			int answer;
-			
-			//TODO: burası çok sorunlu ama iş görüyor for test purposes
-			while(true){
-				try {
-					in = input.next();
-					answer = Integer.parseInt(in);
-					break;
-				} catch (final NumberFormatException e){
-					System.out.println(lang_pack.get("enter an integer value"));
-					continue;
-				}
-			}
-			
-			
-
-			if(answer>0){
-				pinboard.add(userDeck.get(answer-1));
-
-			} else if(answer==-1){
-				pinboard.remove(pinboard.size()-1);
-			} 
-
-			for(int i=0;i<pinboard.size();i++){
-				System.out.print(pinboard.get(i).getValue0() + " ");
-			}
-			System.out.println();
-			
-			if(answer==0){
-				isComplete = true;
-				for(int i=0;i<pinboard.size();i++){
-					if(pinboard.get(i).getValue1()!=i) isComplete = false;
-				}
-				if(isComplete && pinboard.size()!=0){
-					System.out.println(lang_pack.get("right answer") +"\n");
-					input.close();
-					return 1;
-				} else {
-					System.out.println(lang_pack.get("wrong answer") + tuple[1] +"\n");
-					input.close();
-					return 0;
-				}
-			}
-			
-		}
-
-		
-	}
-
-
 	/**
 	 * read input from console alas input not accepted
 	 * TODO: can't close scanner without exception?
@@ -241,13 +161,30 @@ public class Temp {
 	 * @param acceptedAnswers : a list of accepted input strings
 	 * @return
 	 */
-	public static String waitForAcceptedAnswer(final List<String> acceptedAnswers) {
+	public static String waitForAcceptedStringAnswer(final List<String> acceptedAnswers) {
+		
+		final Scanner input = new Scanner(System.in);
+		System.out.println(prompt);
+		String inputBuffer = input.nextLine();
 
-		String inputBuffer = "";
 		while (!(acceptedAnswers.contains(inputBuffer) || acceptedAnswers.contains(inputBuffer.toLowerCase()))) {
-			final Scanner input = new Scanner(System.in);
+			System.out.println("Accepted answers: " + acceptedAnswers); //TODO:
 			System.out.println(prompt);
 			inputBuffer = input.nextLine();
+		}
+		return inputBuffer;
+	}
+
+	public static int waitForAcceptedIntegerAnswer(final List<Integer> acceptedAnswers) {
+
+		final Scanner input = new Scanner(System.in);
+		System.out.println(prompt);
+		int inputBuffer = input.nextInt();
+
+		while (!(acceptedAnswers.contains(inputBuffer))) {
+			System.out.println("Accepted answers: " + acceptedAnswers); //TODO:
+			System.out.println(prompt);
+			inputBuffer = input.nextInt();
 		}
 		return inputBuffer;
 	}
